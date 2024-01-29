@@ -1,5 +1,5 @@
 
-import { IonApp, IonCol, IonContent, IonGrid, IonHeader, IonIcon, IonInput, IonItem, IonLabel, IonRow, IonTitle, IonToolbar, setupIonicReact } from '@ionic/react';
+import { IonApp, IonCol, IonContent, IonGrid, IonHeader, IonInput, IonItem, IonLabel, IonRow, IonTitle, IonToolbar, setupIonicReact,IonAlert, } from '@ionic/react';
 
 import { useRef,useState} from 'react';
 
@@ -25,21 +25,30 @@ import '@ionic/react/css/display.css';
 import './theme/variables.css';
 import BmiResult from './components/BmiResult';
 import BmiControl from './components/BmiControl';
+import InputControl from './components/InputControl';
 
 setupIonicReact();
 
 const App: React.FC = () => {
 const  [calculatedBmi,setCalculatedBmi] = useState<number>()
+const [error, setError] = useState<string>()
+const [calcUnits,setCalcUnits]=useState<'mkg' | 'ftlbs'>('mkg')
   const weightInputRef = useRef<HTMLIonInputElement>(null)
   const heightInputRef = useRef<HTMLIonInputElement>(null)
 const calculateBMi =()=>{
   const enteredWeight =  weightInputRef.current!.value
   const enteredHeight = heightInputRef.current!.value
 
-if(!enteredHeight || !enteredWeight){
+if(!enteredHeight || !enteredWeight || +enteredHeight<=0 || +enteredWeight<=0){
+  setError('Please entered valid number')
   return 
 }
-  const bmi = +enteredWeight / (+enteredHeight * +enteredWeight)
+const weightConversionFactor = calcUnits==='ftlbs'?2.2:1
+const heightConversionFactor = calcUnits==='ftlbs'?3.28:1
+const weight =  +enteredWeight / weightConversionFactor
+const height = +enteredHeight / heightConversionFactor
+
+  const bmi = weight / (height * height)
   setCalculatedBmi(bmi)
   
 }
@@ -48,10 +57,24 @@ const reset=()=>{
   heightInputRef.current!.value=''
 
 }
+
+const  clearError =()=>{
+setError('')
+}
+
+const selectCalcUnitHandler =(selectedVal:'mkg'|'ftlbs')=>{
+  setCalcUnits(selectedVal)
+
+}
 return (
+  <>
+  <IonAlert isOpen={!!error}
+  message={error}
+  buttons={[{text:"Okay",handler:clearError}]}
+  ></IonAlert>
   <IonApp>
   <IonHeader>
-    <IonToolbar>
+    <IonToolbar color='primary'>
       <IonTitle>BMI Calculator</IonTitle>
     </IonToolbar>
   </IonHeader>
@@ -59,11 +82,16 @@ return (
     <IonGrid>
       <IonRow>
         <IonCol>
+          <InputControl selectedVal={calcUnits} onSelectVal={selectCalcUnitHandler}/>
+        </IonCol>
+      </IonRow>
+      <IonRow>
+        <IonCol>
           <IonItem>
             <IonLabel position="floating">
-              Your Height
+              Your Height ({calcUnits ==='mkg'?'meters':'feet'})
              </IonLabel>
-            <IonInput ref={heightInputRef}></IonInput>
+            <IonInput type ="number"ref={heightInputRef}></IonInput>
           </IonItem>
           
         </IonCol>
@@ -72,9 +100,9 @@ return (
         <IonCol>
         <IonItem>
             <IonLabel position="floating">
-              Your Weight
+              Your Weight ({calcUnits==='mkg'?'kg':'lbs'})
              </IonLabel>
-            <IonInput ref={weightInputRef} ></IonInput>
+            <IonInput type ="number" ref={weightInputRef} ></IonInput>
           </IonItem>
         </IonCol>
       </IonRow>
@@ -85,6 +113,7 @@ return (
   </IonContent>
     
   </IonApp>
+  </>
 )
 };
 
